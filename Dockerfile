@@ -1,4 +1,4 @@
-FROM python:3.10-slim-buster
+FROM python:3.10-slim
 
 # Prevent python from writing pyc files to disk and buffering stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1
