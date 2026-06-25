@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+venv/
+env/
+
+# Databases
+database/*.db
+database/*.db-journal
+productivity_hub.db
+
+# Logs
+logs/*.log
+logs/
+
+# Temp files
+temp/downloads/*
+temp/uploads/*
+temp/converted/*
+temp/thumbnails/*
+!temp/downloads/.gitkeep
+!temp/uploads/.gitkeep
+!temp/converted/.gitkeep
+!temp/thumbnails/.gitkeep
+
+# Backups
+backups/*
+!backups/.gitkeep
+
+# OS generated files
+.DS_Store
+Thumbs.db
