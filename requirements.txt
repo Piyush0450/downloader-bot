@@ -10,7 +10,6 @@ pypdf>=3.9.0
 pdf2docx>=0.5.6
 docx2txt>=0.8
 mammoth>=1.6.0
-SQLAlchemy>=2.0.0
 python-multipart>=0.0.6
 requests>=2.31.0
 python-dotenv>=1.0.0

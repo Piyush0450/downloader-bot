@@ -7,49 +7,20 @@ from dotenv import load_dotenv, find_dotenv
 ROOT_DIR = Path(__file__).parent.parent
 load_dotenv(find_dotenv() or (ROOT_DIR / ".env"))
 
-# Validation errors list
-errors = []
-
-# BOT_TOKEN is mandatory
+# Configuration settings loading (Validation is performed in startup service)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-if not BOT_TOKEN:
-    errors.append("BOT_TOKEN is missing. Please set it in your environment or .env file.")
 
-# OWNER_ID is mandatory
 OWNER_ID_RAW = os.getenv("OWNER_ID")
 OWNER_ID = 0
-if not OWNER_ID_RAW:
-    errors.append("OWNER_ID is missing. Please set it (numeric user ID) in your environment or .env file.")
-else:
+if OWNER_ID_RAW:
     try:
         OWNER_ID = int(OWNER_ID_RAW)
     except ValueError:
-        errors.append(f"OWNER_ID must be a numeric integer. Got: '{OWNER_ID_RAW}'")
+        pass
 
-# SECRET_KEY is mandatory and must be secure
 SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    errors.append("SECRET_KEY is missing. Please set it in your environment or .env file.")
-elif SECRET_KEY == "productivity_hub_default_secret":
-    errors.append("SECRET_KEY is using the insecure default value. Please generate a unique secret key.")
-
-# BOT_MODE validation
 BOT_MODE = os.getenv("BOT_MODE", "polling").lower()
-if BOT_MODE not in ("polling", "webhook"):
-    errors.append(f"BOT_MODE must be either 'polling' or 'webhook'. Got: '{BOT_MODE}'")
-
-# WEBHOOK_URL is required only when BOT_MODE = webhook
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
-if BOT_MODE == "webhook" and not WEBHOOK_URL:
-    errors.append("WEBHOOK_URL is required when BOT_MODE is set to 'webhook'.")
-
-# If validation errors occurred, raise a human-readable ValueError
-if errors:
-    print("\n[ERROR] CONFIGURATION ERROR:", file=sys.stderr)
-    for err in errors:
-        print(f"   - {err}", file=sys.stderr)
-    print("==================================================\n", file=sys.stderr)
-    raise ValueError("Configuration validation failed:\n" + "\n".join(errors))
 
 # Optional Settings & Configurations
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "")

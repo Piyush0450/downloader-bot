@@ -3,7 +3,7 @@ services:
     name: productivity-hub-bot
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn bot:app --host 0.0.0.0 --port $PORT
+    startCommand: python setup_webhook.py && gunicorn bot:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     plan: standard
     disk:
       name: db-volume

@@ -25,6 +25,10 @@ def validate_startup() -> bool:
         errors.append("SECRET_KEY is missing in environment.")
     elif SECRET_KEY == "productivity_hub_default_secret":
         errors.append("SECRET_KEY is set to the default insecure value.")
+    if BOT_MODE not in ("polling", "webhook"):
+        errors.append(f"BOT_MODE must be either 'polling' or 'webhook'. Got: '{BOT_MODE}'")
+    if BOT_MODE == "webhook" and not WEBHOOK_URL:
+        errors.append("WEBHOOK_URL is required when BOT_MODE is set to 'webhook'.")
         
     # 2. Folder validation and auto-creation
     dirs_status = True

@@ -31,4 +31,4 @@ RUN mkdir -p database temp/downloads temp/uploads temp/converted logs && chmod 7
 EXPOSE 8000
 
 # Run FastAPI app with Gunicorn and Uvicorn workers
-CMD ["sh", "-c", "gunicorn bot:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]
+CMD ["sh", "-c", "python setup_webhook.py && gunicorn bot:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]

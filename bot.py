@@ -310,11 +310,6 @@ async def lifespan(app: FastAPI):
     cleanup_task = asyncio.create_task(file_cleanup_scheduler())
     backup_task  = asyncio.create_task(backup_and_logs_scheduler())
 
-    if BOT_MODE == "webhook":
-        webhook_full_url = f"{WEBHOOK_URL}/webhook"
-        logger.info(f"Registering webhook: {webhook_full_url}")
-        await application.bot.set_webhook(url=webhook_full_url)
-
     yield
 
     cleanup_task.cancel()
@@ -323,8 +318,6 @@ async def lifespan(app: FastAPI):
         await asyncio.gather(cleanup_task, backup_task, return_exceptions=True)
     except Exception:
         pass
-    if BOT_MODE == "webhook":
-        await application.bot.delete_webhook()
     await application.stop()
     await application.shutdown()
 
