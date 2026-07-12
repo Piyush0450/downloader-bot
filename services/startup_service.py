@@ -5,7 +5,7 @@ from pathlib import Path
 from config.settings import (
     BOT_TOKEN, OWNER_ID, SECRET_KEY, DATABASE_DIR, LOGS_DIR, TEMP_DIR,
     DOWNLOADS_DIR, UPLOADS_DIR, CONVERTED_DIR, THUMBNAILS_DIR, BACKUPS_DIR,
-    BOT_MODE
+    BOT_MODE, WEBHOOK_URL
 )
 from utils.logger import logger
 
