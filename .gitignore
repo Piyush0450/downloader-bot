@@ -1,37 +1,46 @@
-# Byte-compiled / optimized / DLL files
+# Python bytecode & cache
 __pycache__/
 *.py[cod]
 *$py.class
 
 # Environments
-.env
-.venv
+.venv/
 venv/
+ENV/
 env/
+env.bak/
+venv.bak/
 
-# Databases
+# Environment configuration & secrets
+.env
+.env.local
+.env.*.local
+
+# Databases & SQLite
+*.sqlite
+*.sqlite3
+*.db
+database/*.sqlite3
 database/*.db
-database/*.db-journal
-productivity_hub.db
+!database/**/.gitkeep
 
-# Logs
-logs/*.log
+# Log files & directories
 logs/
+*.log
 
-# Temp files
-temp/downloads/*
-temp/uploads/*
-temp/converted/*
-temp/thumbnails/*
-!temp/downloads/.gitkeep
-!temp/uploads/.gitkeep
-!temp/converted/.gitkeep
-!temp/thumbnails/.gitkeep
-
-# Backups
+# Temporary processing files
+temp/*
+!temp/**/.gitkeep
 backups/*
-!backups/.gitkeep
+!backups/**/.gitkeep
 
-# OS generated files
+# IDE & Editor specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Operating System files
 .DS_Store
 Thumbs.db
+desktop.ini

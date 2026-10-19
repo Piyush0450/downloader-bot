@@ -1,0 +1,32 @@
+# Python bytecode & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Environment secrets
+.env
+.env.*
+
+# Local databases & logs
+*.sqlite
+*.sqlite3
+*.db
+database/*.sqlite3
+database/*.db
+logs/
+*.log
+
+# Temporary processing files
+temp/
+backups/
+
+# Git & IDE files
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store

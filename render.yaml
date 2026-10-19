@@ -1,23 +1,31 @@
+# ====================================================================
+# Render CI/CD Deployment Blueprint
+# Productivity Hub Telegram Bot
+# ====================================================================
+
 services:
   - type: web
     name: productivity-hub-bot
     runtime: docker
     plan: standard
+    healthCheckPath: /health
+    autoDeploy: true
     disk:
       name: db-volume
       mountPath: /app/database
       sizeGB: 1
-    healthCheckPath: /health
     envVars:
-      - key: BOT_MODE
-        value: webhook
       - key: BOT_TOKEN
         sync: false
       - key: OWNER_ID
         sync: false
       - key: SECRET_KEY
         generateValue: true
-      - key: WEBHOOK_URL
-        sync: false
+      - key: BOT_MODE
+        value: polling
       - key: LOG_LEVEL
         value: INFO
+      - key: PORT
+        value: 8000
+      - key: DATABASE_PATH
+        value: database/app.sqlite3

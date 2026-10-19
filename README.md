@@ -1,175 +1,258 @@
-# Productivity Hub Bot (Production Grade)
+# 🚀 Productivity Hub - Production-Ready Telegram Bot
 
-Your all-in-one Telegram productivity toolkit designed to handle media downloads, document conversions, image processing, QR code scanning/generation, file compression, and advanced text utilities.
+[![Render Deployment](https://img.shields.io/badge/Render-Deployed-success?style=flat&logo=render)](https://render.com)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg?logo=python)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-The bot features a robust 2-concurrency queue processor, separate rotating logs, automated database backups, automatic security warnings/bans, and a comprehensive Admin console.
+A high-performance, asynchronous Telegram **Productivity Hub Bot** built with Python 3.11 and `python-telegram-bot` v20+. Designed for enterprise reliability, high concurrency, and low memory usage on cloud environments like Render, providing universal media downloading, multi-format file conversion, AI background removal, file compression, and QR code utilities.
 
 ---
 
-## Folder Structure
+## 📑 Table of Contents
 
-```text
-TaskForge/
-├── bot.py                     # Root ASGI Webhook & Polling launcher
-├── health_check.py            # Standalone diagnostics utility
-├── setup_checklist.md         # Checklist for configuration & launch
-├── runtime.txt                # Render Python runtime environment setup
-├── config/
-│   └── settings.py            # Environment configurations & thresholds
-├── database/
-│   └── bot.db                 # SQLite database file (Persistent)
-├── backups/                   # System backups (Daily ZIPs)
-├── handlers/
-│   ├── start.py               # Start welcoming handlers
-│   ├── help.py                # Instructions guides
-│   ├── download.py            # Media downloader handler
-│   ├── converter.py           # File conversions router
-│   ├── image_tools.py         # Pillow image processing actions
-│   ├── qr_tools.py            # Generating and scanning QRs
-│   ├── compressor.py          # PDF/Image compressions
-│   └── admin.py               # Admin operations console (Dashboard)
-├── services/
-│   ├── download_service.py    # yt-dlp downloader worker
-│   ├── conversion_service.py  # Conversions orchestrator
-│   ├── image_service.py       # PIL processing actions
-│   ├── qr_service.py          # QR scanning & card parsing
-│   ├── compression_service.py # PDF & image resizing compression
-│   ├── text_service.py        # Casing transformations
-│   ├── database_service.py    # SQLite3 persistence manager (pure sqlite3)
-│   ├── security_service.py    # Spam, rate limit, auto-bans
-│   ├── startup_service.py     # Startup validations & banners
-│   └── queue_service.py       # Concurrency queue scheduler
-├── utils/
-│   ├── validators.py          # URL & size validators
-│   ├── helpers.py             # Size formatting & sweep cleaner
-│   ├── logger.py              # Rotating log split utility
-│   ├── file_detector.py       # MIME categories lookup
-│   └── conversion_registry.py # Dynamic conversion matrix
-├── temp/
-│   ├── downloads/             # Temp downloads
-│   ├── uploads/               # Temp uploads
-│   ├── converted/             # Temp conversions
-│   └── thumbnails/            # Temp media thumbnails
-├── logs/                      # Separated rotating log files
-├── requirements.txt           # Python dependencies
-├── render.yaml                # Render service blueprint definition
-├── .env.example               # Environment variables template
-└── README.md                  # Main documentation
+- [Project Overview](#-project-overview)
+- [Primary Modules](#-primary-modules)
+- [Conversion Matrix](#-supported-conversion-matrix)
+- [System Architecture](#-system-architecture)
+- [Tech Stack](#-tech-stack)
+- [Installation & Local Setup](#-installation--local-setup)
+- [Environment Variables](#-environment-variables)
+- [Render CI/CD Deployment](#-render-cicd-deployment)
+- [Running Automated Tests](#-running-automated-tests)
+- [Security & Hardening](#-security--hardening)
+- [Troubleshooting & Gotchas](#-troubleshooting--gotchas)
+
+---
+
+## 🌟 Project Overview
+
+Productivity Hub consolidates 6 essential digital utility suites into a single, intuitive Telegram bot interface:
+
+1. **🎬 Universal Media Downloader** (`yt-dlp`)
+2. **🔄 Universal File Converter** (Dynamic multi-format engine)
+3. **🪄 Image Background Remover** (`rembg` / `u2netp`)
+4. **📦 Universal File Compressor** (Multi-format optimizer with honest metrics)
+5. **🔳 QR Code Generator** (Structured payloads: URLs, Wi-Fi, vCard, Events, UPI)
+6. **🔍 QR Code Scanner** (High-precision OpenCV & pyzbar decoding)
+
+The application is backed by a **bounded worker task queue**, **file cleanup protection**, **sliding-window rate limiters**, and an **aiohttp health check server** for seamless Render zero-downtime deployments.
+
+---
+
+## ⚡ Primary Modules
+
+| Module | Features & Capabilities |
+| :--- | :--- |
+| **🎬 Media Downloader** | Asynchronous `yt-dlp` integration supporting YouTube, Instagram, TikTok, Twitter/X, Snapchat, Facebook, Reddit, Vimeo, and SoundCloud. Pre-extracts metadata before downloading, offers interactive format choices (`360p`, `720p`, `1080p`, `MP3 320k`, `MP3 128k`), streams throttled progress bars, and enforces strict file size caps. |
+| **🔄 File Converter** | Dynamic conversion matrix powered by Pillow, FFmpeg, LibreOffice, pypdf, python-docx, openpyxl, and pandas. Smart magic-byte signature inspection with paginated format selection keyboards. |
+| **🪄 Background Remover** | AI-driven background removal powered by `rembg` (lazy-loaded lightweight `u2netp` ONNX model). Enforces memory scaling limits (max 2048px) and always delivers output as uncompressed transparent PNG documents to preserve alpha channels. |
+| **📦 File Compressor** | Adaptive compression engine for Images (JPEG/PNG/WEBP/HEIC), PDFs (Ghostscript/pypdf), Audio/Video (FFmpeg adaptive bitrates), and Archives. Offers Low, Medium, and High compression profiles with honest before/after comparison metrics. |
+| **🔳 QR Generator** | Generates high-contrast QR codes across 7 structured categories: Website URLs, Plain Text, Wi-Fi credentials (`WIFI:`), Contact Cards (vCard 3.0), Calendar Events (iCalendar `VEVENT`), SMS (`SMSTO:`), and UPI Payment links (`upi://pay`). |
+| **🔍 QR Scanner** | Robust image decoder utilizing `OpenCV` (`cv2.QRCodeDetector`) with `pyzbar` fallback. Automatically extracts structured attributes, presents copyable raw text, and generates explicit, safe link buttons for verified HTTP/HTTPS targets. |
+| **👑 Admin Dashboard** | Secure `/admin` control panel accessible exclusively to authorized numeric `OWNER_ID`: Real-time system diagnostics (CPU, RAM, Storage, Uptime, Queue status), runtime dependencies health check (`/adm:deps`), user ban/unban management, audit logs, and maintenance mode toggle. |
+
+---
+
+## 🔄 Supported Conversion Matrix
+
+| Category | Source Formats | Target Formats | Engine Backend |
+| :--- | :--- | :--- | :--- |
+| **Images** | `PNG`, `JPG`, `JPEG`, `WEBP`, `BMP`, `TIFF`, `ICO`, `GIF` | `PNG`, `JPG`, `WEBP`, `PDF`, `ICO`, `BMP` | Pillow / ImageOps |
+| **Documents** | `DOCX`, `DOC`, `ODT`, `RTF`, `TXT`, `HTML`, `PDF` | `PDF`, `DOCX`, `TXT`, `HTML` | LibreOffice / pypdf / python-docx |
+| **Spreadsheets** | `XLSX`, `XLS`, `CSV`, `ODS` | `CSV`, `XLSX`, `PDF`, `HTML` | openpyxl / pandas / LibreOffice |
+| **Audio** | `MP3`, `WAV`, `OGG`, `M4A`, `AAC`, `FLAC`, `OPUS` | `MP3`, `AAC`, `M4A`, `OGG`, `WAV`, `FLAC` | FFmpeg |
+| **Video** | `MP4`, `MKV`, `AVI`, `MOV`, `WEBM`, `FLV` | `MP4`, `WEBM`, `GIF`, `MP3` | FFmpeg |
+| **Archives** | `ZIP`, `TAR`, `GZ` | `ZIP`, `TAR`, `GZ` | Python zipfile / tarfile |
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    User([Telegram User]) <--> App[Python Telegram Bot v20+]
+    App <--> MW[Middleware: Rate Limiter & Ban Check]
+    MW <--> Dispatcher[Unified Media & Message Dispatcher]
+    
+    Dispatcher <--> Downloader[Media Downloader Service]
+    Dispatcher <--> Converter[File Conversion Service]
+    Dispatcher <--> BGRemover[Background Removal Service]
+    Dispatcher <--> Compressor[File Compression Service]
+    Dispatcher <--> QRGen[QR Generation Service]
+    Dispatcher <--> QRScan[QR Scanning Service]
+    
+    Downloader & Converter & BGRemover & Compressor <--> Queue[Task Queue Service]
+    Queue <--> DB[(Async SQLite Database)]
+    
+    Cleanup[Automated Cleanup Service] -. Protects Active Task Files .-> Queue
+    Health[aiohttp Health Server :8000] -. GET /health .-> Render([Render Cloud Platform])
+    Admin([Owner / Admin]) <--> AdminDashboard[Admin Dashboard & Diagnostics]
+```
+
+- **Non-Blocking Concurrency**: Heavy CPU and disk tasks run asynchronously via dedicated worker thread pools (`asyncio.to_thread`).
+- **Bounded Task Queue**: Prevents RAM spikes on low-tier hosting (Render 512 MB). Configured with `MAX_CONCURRENT_TASKS=2`, `MAX_USER_ACTIVE_TASKS=1`, and `MAX_QUEUE_SIZE=50`.
+- **Active Task File Protection**: The `CleanupService` queries `TaskQueueService.get_active_file_paths()` before every sweep to ensure in-flight files are never purged.
+- **Circuit Breakers**: External dependencies (e.g., LibreOffice, FFmpeg, rembg) are probed once on startup and cached, preventing repeated subprocess crashes if an optional binary is missing.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Runtime**: Python 3.11+
+- **Telegram Bot Engine**: `python-telegram-bot` v20.7 (full async coroutines)
+- **Database**: SQLite3 via `aiosqlite` with WAL mode and automated DDL migrations
+- **Web & Health**: `aiohttp` (integrated lightweight HTTP health server on port 8000)
+- **Media & Processing**: `yt-dlp`, `Pillow`, `pypdf`, `reportlab`, `python-docx`, `openpyxl`, `pandas`, `rembg`, `qrcode`, `opencv-python-headless`, `pyzbar`
+- **System Monitoring**: `psutil`
+- **Testing**: Python `unittest` suite (36 comprehensive test cases)
+
+---
+
+## 🚀 Installation & Local Setup
+
+### Prerequisites
+
+- Python 3.11 or higher
+- Git
+- FFmpeg (required for video/audio conversions and media merging)
+
+### 1. Clone Repository & Setup Virtual Environment
+
+```bash
+git clone https://github.com/Piyush0450/downloader-bot.git
+cd downloader-bot
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# Windows:
+.\venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+```
+
+### 2. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Environment Configuration
+
+Copy `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Configure the essential keys:
+
+```env
+BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ
+OWNER_ID=123456789
+BOT_MODE=polling
+PORT=8000
+DATABASE_PATH=database/app.sqlite3
+```
+
+### 4. Run the Bot
+
+```bash
+python bot.py
+```
+
+The bot will execute its 13-step startup sequence, verify dependencies, run database migrations, start the background queue, and launch the health check server at `http://localhost:8000/health`.
+
+---
+
+## ⚙️ Environment Variables
+
+| Variable | Required | Default | Description |
+| :--- | :---: | :--- | :--- |
+| `BOT_TOKEN` | **Yes** | - | Telegram Bot API token obtained from [@BotFather](https://t.me/BotFather) |
+| `OWNER_ID` | **Yes** | - | Numeric Telegram User ID of the primary administrator / bot owner |
+| `SECRET_KEY` | No | Auto-generated | Cryptographic key for session tokens and security hashing |
+| `BOT_MODE` | No | `polling` | Operational mode: `polling` (recommended) or `webhook` |
+| `PORT` | No | `8000` | Port for the integrated HTTP health check server |
+| `DATABASE_PATH` | No | `database/app.sqlite3` | SQLite database file path (persisted on disk) |
+| `LOG_LEVEL` | No | `INFO` | Logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `MAX_CONCURRENT_TASKS`| No | `2` | Maximum concurrent background tasks across all users |
+| `MAX_USER_ACTIVE_TASKS`| No | `1` | Maximum concurrently running tasks per single user |
+| `MAX_USER_QUEUE_TASKS` | No | `3` | Maximum queued tasks allowed per single user |
+| `MAX_QUEUE_SIZE` | No | `50` | Global queue capacity limit before rejection |
+| `TEMP_RETENTION_MINUTES`| No | `60` | Age cutoff for temporary file cleanup sweeps |
+| `MAX_FILE_SIZE` | No | `50` | Maximum upload/download file limit in MB |
+| `MAINTENANCE_MODE` | No | `false` | System maintenance mode toggle |
+
+---
+
+## 🌐 Render CI/CD Deployment
+
+This repository is pre-configured for automatic zero-downtime deployment on **Render** using `render.yaml`.
+
+### Deployment Blueprint
+
+1. Push your changes to the primary deployment branch (`main`):
+   ```bash
+   git push origin main
+   ```
+2. In the [Render Dashboard](https://dashboard.render.com), connect your GitHub repository (`Piyush0450/downloader-bot`).
+3. Render automatically provisions the web service from `render.yaml`:
+   - **Environment**: Python (or Docker via `Dockerfile`)
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python productivity_hub/bot.py`
+   - **Health Check Path**: `/health`
+   - **Persistent Disk**: Mounted at `/app/database` (size: 1 GB) to keep user accounts and audit history across redeploys.
+4. Set `BOT_TOKEN` and `OWNER_ID` in the Render Environment Variables dashboard.
+
+---
+
+## 🧪 Running Automated Tests
+
+Run the complete 36-test suite using Python's native `unittest` runner:
+
+```bash
+python -m unittest discover tests
+```
+
+Individual test modules can be targeted directly:
+
+```bash
+python -m unittest tests.test_queue_service
+python -m unittest tests.test_admin_service
+python -m unittest tests.test_compression_service
+python -m unittest tests.test_conversion_registry
+python -m unittest tests.test_qr_services
+python -m unittest tests.test_validators
 ```
 
 ---
 
-## Features
+## 🔒 Security & Hardening
 
-1. **📥 Media Downloader**: Extracts and downloads supported media (video/audio) from YouTube, TikTok, Instagram, Twitter/X, and more.
-2. **📄 File Converter**: Dynamically generates conversion targets from the registry (e.g. DOCX -> PDF, TXT, HTML, EPUB, RTF).
-3. **🖼 Image Tools**: Support cropping, resizing, rotating, metadata stripping, and thumbnail generation.
-4. **🔳 QR Generator & Scanner**: Instantly generate QR codes for text, WiFi configs, and contacts, or upload photos to scan.
-5. **📦 File Compressor**: Highly optimized image and PDF size reduction.
-6. **📝 Text Utilities**: UPPERCASE, lowercase, Title Case, Sentence Case, duplicate line removal, pretty JSON, and text stats.
-7. **⚡ Queue Scheduler**: Restricts active heavy jobs to a maximum of 2 globally, keeping users updated with queue position and estimated wait times.
-8. **🔒 Hardened Security**: Automates warnings (attempts $\ge 3$) and permanent bans (attempts $\ge 5$) for unauthorized admin access, spammed rate limits, or queue abuse.
+- **Strict Owner Authentication**: The `/admin` dashboard and management endpoints check against numeric `OWNER_ID` or database records.
+- **Menu Ownership Tokens**: All inline keyboard callback queries validate the user ID token embedded in callback data, preventing cross-user button tampering.
+- **Zip Slip & Path Traversal Prevention**: Strict canonicalization checks ensure extracted archive contents never escape the destination folder.
+- **Decompression Bomb Protection**: Archive extractions enforce a 100 MB total uncompressed limit and a maximum count of 500 files.
+- **Secret Redaction**: Telegram bot tokens and API secrets are automatically masked in all console outputs and rotating log files.
+- **Safe URL Validation**: QR code scanning checks for well-formed HTTP/HTTPS protocols and non-whitelisted IP addresses before generating clickable link buttons.
 
 ---
 
-## Environment Variables Explanation
+## ❓ Troubleshooting & Gotchas
 
-Create a `.env` file in the root directory and configure the following variables:
-
-| Variable | Type | Mandatory / Optional | Default Value | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `BOT_TOKEN` | String | **Mandatory** | None | The HTTP API token obtained from Telegram's [@BotFather](https://t.me/BotFather). |
-| `OWNER_ID` | Integer | **Mandatory** | None | Numeric Telegram User ID of the primary administrator (to access the `/admin` panel). |
-| `SECRET_KEY` | String | **Mandatory** | None | Secure cryptographic key. Refuses startup if missing or set to `productivity_hub_default_secret`. |
-| `CHANNEL_USERNAME` | String | Optional | None | Telegram channel username (e.g., `@mychannel`) for optional subscription checks. |
-| `BOT_MODE` | String | **Mandatory** | `polling` | Operational mode: `polling` for local development, `webhook` for production environments. |
-| `WEBHOOK_URL` | String | Conditional | None | Required only when `BOT_MODE=webhook`. Public HTTPS URL where the webserver is reachable. |
-| `PORT` | Integer | Optional | `8000` | Port for the FastAPI webhook server to bind to. |
-| `DATABASE_PATH` | String | Optional | `database/bot.db` | Relative SQLite database filename location. |
-| `DATABASE_URL` | String | Optional | `sqlite:///database/bot.db` | SQLAlchemy-style connection URL to the SQLite database. |
-| `LOG_LEVEL` | String | Optional | `INFO` | Console & file logger severity level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`). |
+1. **`libzbar` Not Found on Windows**:
+   - `pyzbar` requires native C libraries on Windows. The bot detects this and automatically falls back to `OpenCV` (`cv2.QRCodeDetector`) with 100% accuracy.
+2. **Transparent PNG Compression on Telegram**:
+   - Sending background-removed photos via `send_photo` causes Telegram to convert them to non-alpha JPEGs. The bot delivers all transparent images via `send_document` to preserve transparency.
+3. **Excel File Locks on Windows**:
+   - When converting Excel files, all workbooks are explicitly closed (`wb.close()`) before removal to avoid Windows file sharing violations (WinError 32).
+4. **Media Downloader Updates**:
+   - Social media platform algorithms change frequently. Run `pip install -U yt-dlp` to update extractor logic if a specific platform fails.
 
 ---
 
-## Installation & Local Setup
+## 📄 License
 
-1. **Clone the Repository**:
-   ```bash
-   git clone <repository_url>
-   cd TaskForge
-   ```
-
-2. **Configure Virtual Environment**:
-   ```bash
-   python -m venv venv
-   # Activate on Windows:
-   .\venv\Scripts\activate
-   # Activate on macOS/Linux:
-   source venv/bin/activate
-   ```
-
-3. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Setup Environment**:
-   - Copy `.env.example` to `.env`:
-     ```bash
-     cp .env.example .env
-     ```
-   - Open `.env` and fill in `BOT_TOKEN`, `OWNER_ID`, and a secure `SECRET_KEY`.
-
-5. **Initialize Database**:
-   ```bash
-   python -c "from services.database_service import init_db; init_db()"
-   ```
-
-6. **Run Health Diagnostics**:
-   Ensure everything is configured correctly:
-   ```bash
-   python health_check.py
-   ```
-
-7. **Start the Bot**:
-   ```bash
-   python bot.py
-   ```
-
----
-
-## Production Deployment Guide
-
-### Render Setup
-1. Log in to Render and create a new **Web Service** mapped to your repository.
-2. Render will automatically detect `render.yaml`. Confirm settings and click deploy.
-3. Configure a persistent Disk mount to keep database records:
-   - **Name**: `db-volume`
-   - **Mount Path**: `/app/database`
-   - **Size**: 1 GB
-4. In your Web Service settings on Render, navigate to **Environment** and configure the required environment variables:
-   - `BOT_TOKEN`, `OWNER_ID`, `SECRET_KEY`, `WEBHOOK_URL` (your web service domain on Render, e.g., `https://your-service.onrender.com`), and `BOT_MODE=webhook`.
-5. Ensure the health check path is configured to `/health`.
-
-### Railway Setup
-1. Log in to Railway and create a new project. Select **Deploy from GitHub**.
-2. Go to the service settings and click **Add Volume** to mount a persistent volume at `/app/database`.
-3. In the variables tab, add all variables from the `.env.example` file.
-4. Railway will automatically build and run the bot from the start command:
-   `uvicorn bot:app --host 0.0.0.0 --port $PORT` using the Python runtime.
-
-### Replit Setup
-1. Import the repository directly into Replit.
-2. In the Replit side panel, go to **Tools -> Secrets** and enter all environment variables (`BOT_TOKEN`, `OWNER_ID`, etc.).
-3. The Replit workspace directory persists by default. Setup the start command to:
-   `python bot.py` and run.
-
----
-
-## Troubleshooting
-
-1. **Ffmpeg missing error**: Media downloader and compressor tools require `ffmpeg` installed on the host system.
-   - For Local Setup: Download FFmpeg and add it to your system PATH.
-   - For Render/Railway: Built-in builders include FFmpeg automatically.
-2. **Permission errors on SQLite database**: Ensure the directory `/app/database` has read/write permissions.
-3. **Webhook errors**: In Webhook mode, verify `WEBHOOK_URL` is an HTTPS url, and matches your public endpoint domain.
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.
