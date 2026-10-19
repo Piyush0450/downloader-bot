@@ -388,7 +388,7 @@ class TaskQueueService:
             result = await task.coro_fn(*task.args, **task.kwargs)
 
             task.status = TaskStatus.COMPLETED
-            res_json = json.dumps(result) if isinstance(result, (dict, list)) else str(result) if result else None
+            res_json = json.dumps(result, default=str) if isinstance(result, (dict, list)) else str(result) if result else None
             await db.update_task_status(task_id, TaskStatus.COMPLETED, result_data=res_json)
             
             if task.future and not task.future.done():
